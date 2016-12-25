@@ -1,24 +1,25 @@
 package boltdb
 
 import (
-	"log"
 	"time"
 
 	"github.com/boltdb/bolt"
 )
 
-// New Database opens a new database
-func NewDatabase(dbfile string) (d *database, err error) {
-	d = &database{}
+// NewDatabase opens a new database
+func NewDatabase(dbfile string) (d *Database, err error) {
+	d = &Database{}
 	d.db, err = bolt.Open(dbfile, 0600, &bolt.Options{Timeout: 1 * time.Second})
 	return
 }
 
-type database struct {
+// Database Struct
+type Database struct {
 	db *bolt.DB
 }
 
-func (bt *database) Put(bucket, key, val []byte) error {
+// Put inserts a key:value pair into the database
+func (bt *Database) Put(bucket, key, val []byte) error {
 	err := bt.db.Update(func(tx *bolt.Tx) error {
 		bucket, err := tx.CreateBucketIfNotExists([]byte(bucket))
 		if err != nil {
@@ -33,12 +34,16 @@ func (bt *database) Put(bucket, key, val []byte) error {
 	return err
 }
 
-func (bt *database) Get(bucket, key []byte) {
+// Get retrieves a key:value pair from the database
+func (bt *Database) Get(bucket, key []byte) (result []byte, err error) {
 	bt.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucket))
 		v := b.Get([]byte(key))
-		log.Println("Val:", v)
+		if v != nil {
+			result = make([]byte, len(v))
+			copy(result, v)
+		}
 		return nil
 	})
-
+	return
 }

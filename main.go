@@ -15,6 +15,8 @@ func main() {
 	if err != nil {
 		log.Println(err)
 	}
+
 	database.Put([]byte("bucket"), []byte("somekey"), []byte("somevalue"))
-	database.Get([]byte("bucket"), []byte("somekey"))
+	res, err := database.Get([]byte("bucket"), []byte("somekey"))
+	log.Println("Result: ", string(res), "Err:", err)
 }
