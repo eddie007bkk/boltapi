@@ -12,22 +12,21 @@ func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 }
 
+var database *boltdb.Database
+
 func main() {
 	dbfile := "/home/ubuntu/test.db"
-	database, err := boltdb.NewDatabase(dbfile)
-	if err != nil {
-		log.Println(err)
-	}
+	database, _ = boltdb.NewDatabase(dbfile)
 
 	database.Put([]byte("bucket"), []byte("somekey"), []byte("somevalue"))
-	res, err := database.Get([]byte("bucket"), []byte("somekey"))
-	log.Println("Result: ", string(res), "Err:", err)
 
 	router := mux.NewRouter().StrictSlash(true)
-	router.HandleFunc("/", Hello)
+	router.HandleFunc("/read/", read)
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
 
-func Hello(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Hello User"))
+func read(w http.ResponseWriter, r *http.Request) {
+	log.Println(database)
+	res, err := database.Get([]byte("bucket"), []byte("somekey"))
+	log.Println("Result: ", string(res), "Err:", err)
 }
