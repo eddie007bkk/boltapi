@@ -36,18 +36,24 @@ func reqHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func get(w http.ResponseWriter, r *http.Request) {
-	res, err := database.Get([]byte("bucket"), []byte("somekey"))
-	log.Println("Result: ", string(res), "Err:", err)
+	vars := mux.Vars(r)
+	bucket := vars["bucket"]
+	key := vars["key"]
+	res, err := database.Get([]byte(bucket), []byte(key))
+	if err != nil {
+		log.Fatal(err)
+	}
+	response := "{" + key + ":" + string(res) + "}"
+	w.Write([]byte(response))
 }
 
 func put(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	bucket := vars["bucket"]
-	keys := vars["key"]
-	vals, err := ioutil.ReadAll(r.Body)
+	key := vars["key"]
+	val, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println(bucket, keys, vals)
-	database.Put([]byte("bucket"), []byte("somekey"), []byte("somevalue"))
+	database.Put([]byte(bucket), []byte(key), []byte(val))
 }
