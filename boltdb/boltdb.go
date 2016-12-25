@@ -20,6 +20,8 @@ type Database struct {
 
 // Put inserts a key:value pair into the database
 func (bt *Database) Put(bucket, key, val []byte) error {
+	//dbPath := bt.db.Path()
+	//log.Println("DB Info: ", reflect.TypeOf(dbPath), dbPath)
 	err := bt.db.Update(func(tx *bolt.Tx) error {
 		bucket, err := tx.CreateBucketIfNotExists([]byte(bucket))
 		if err != nil {
@@ -46,4 +48,8 @@ func (bt *Database) Get(bucket, key []byte) (result []byte, err error) {
 		return nil
 	})
 	return
+}
+
+func (bt *Database) CurrentDB() string {
+	return bt.db.Path()
 }

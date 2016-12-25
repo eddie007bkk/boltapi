@@ -21,7 +21,13 @@ func main() {
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/dbs/{db}/buckets/{bucket}/keys/{key}", reqHandler)
+	router.HandleFunc("/dbs/current", getCurrentDB)
 	log.Fatal(http.ListenAndServe(":8080", router))
+}
+
+func getCurrentDB(w http.ResponseWriter, r *http.Request) {
+	dbPath := database.CurrentDB()
+	w.Write([]byte(dbPath))
 }
 
 func reqHandler(w http.ResponseWriter, r *http.Request) {
@@ -31,8 +37,8 @@ func reqHandler(w http.ResponseWriter, r *http.Request) {
 	case "GET":
 		get(w, r)
 	}
-	vars := mux.Vars(r)
-	log.Println("db:", vars["db"])
+	//vars := mux.Vars(r)
+	//log.Println("db:", vars["db"])
 }
 
 func get(w http.ResponseWriter, r *http.Request) {
