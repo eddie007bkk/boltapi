@@ -19,6 +19,7 @@ func main() {
 	dbfile := "/home/ubuntu/test.db"
 	database, _ = boltdb.NewDatabase(dbfile)
 
+	log.Println("Begin Server")
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/dbs/{db}/buckets/{bucket}/keys/{key}", reqHandler)
 	router.HandleFunc("/dbs/current", getCurrentDB)

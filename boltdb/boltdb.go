@@ -1,6 +1,7 @@
 package boltdb
 
 import (
+	"strings"
 	"time"
 
 	"github.com/boltdb/bolt"
@@ -50,6 +51,9 @@ func (bt *Database) Get(bucket, key []byte) (result []byte, err error) {
 	return
 }
 
+// CurrentDB retrieves the path of the current database
 func (bt *Database) CurrentDB() string {
-	return bt.db.Path()
+	dbPath := bt.db.Path()
+	dbName := strings.Split(dbPath, "/")
+	return dbName[len(dbName)-1]
 }
