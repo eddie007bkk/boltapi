@@ -5,9 +5,14 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 )
+
+type userRequest struct {
+	db, bucket, key string
+}
 
 func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
@@ -16,12 +21,37 @@ func init() {
 var database *boltdb.Database
 
 func main() {
+	port := ":8080"
+	log.Println("Server Listening on Port: ", port)
 
-	log.Println("Begin Server")
 	router := mux.NewRouter().StrictSlash(true)
-	router.HandleFunc("/dbs/{db}/buckets/{bucket}/keys/{key}", reqHandler)
-	router.HandleFunc("/dbs/current", getCurrentDB)
-	log.Fatal(http.ListenAndServe(":8080", router))
+	router.HandleFunc("/dbs/", requestHandler)
+	router.HandleFunc("/dbs/{db}/", requestHandler)
+	router.HandleFunc("/dbs/{db}/buckets/{bucket}/keys/{key}", requestHandler)
+
+	log.Fatal(http.ListenAndServe(port, router))
+}
+
+func requestHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	var userRequest userRequest
+	userRequest.db = vars["db"]
+	userRequest.bucket = vars["bucket"]
+	userRequest.key = vars["key"]
+
+	if len(userRequest.db) > 0 && (database == nil || (userRequest.db != database.CurrentDB())) {
+		var err error
+		database, err = openDB(userRequest.db)
+		handleErr(err)
+	}
+	switch r.Method {
+	case "PUT":
+		put(w, r, userRequest)
+	case "GET":
+		get(w, r, userRequest)
+	case "DELETE":
+		delete(w, r, userRequest)
+	}
 }
 
 func openDB(dbfile string) (d *boltdb.Database, err error) {
@@ -36,7 +66,7 @@ func openDB(dbfile string) (d *boltdb.Database, err error) {
 	return database, err
 }
 
-func getCurrentDB(w http.ResponseWriter, r *http.Request) {
+func getCurrentDB(w http.ResponseWriter, r *http.Request, userRequest userRequest) {
 	if database == nil {
 		log.Println("DB = Nil")
 		w.Write([]byte("{\"database\":\"none\"}"))
@@ -46,44 +76,48 @@ func getCurrentDB(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func reqHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	requestDB := vars["db"]
+func get(w http.ResponseWriter, r *http.Request, userRequest userRequest) {
+	if len(userRequest.key) > 0 {
+		//User has specified a db, bucket & key
+		res, err := database.Get([]byte(userRequest.bucket), []byte(userRequest.key))
+		handleErr(err)
+		response := "{\"" + userRequest.key + "\":\"" + string(res) + "\"}"
+		w.Write([]byte(response))
+	} else if len(userRequest.db) > 0 {
+		//User has only specified a db, return data about this db
+	} else {
+		//User has not specified any db, return data about all DBs
+	}
 
-	if database == nil || (requestDB != database.CurrentDB()) {
-		var err error
-		database, err = openDB(requestDB)
+}
+
+func put(w http.ResponseWriter, r *http.Request, userRequest userRequest) {
+	if len(userRequest.key) > 0 {
+		//User has specified a db, bucket & key
+		vars := mux.Vars(r)
+		bucket := vars["bucket"]
+		key := vars["key"]
+		val, err := ioutil.ReadAll(r.Body)
+		handleErr(err)
+		database.Put([]byte(bucket), []byte(key), []byte(val))
+	} else if len(userRequest.db) > 0 {
+		//User has only specified a db, return data about this db
+	} else {
+		//User has not specified any db, return data about all DBs
+	}
+
+}
+func delete(w http.ResponseWriter, r *http.Request, userRequest userRequest) error {
+	if database != nil {
+		err := database.DB.Close()
 		handleErr(err)
 	}
-	switch r.Method {
-	case "PUT":
-		put(w, r)
-	case "GET":
-		get(w, r)
-	}
-	//vars := mux.Vars(r)
-	//log.Println("db:", vars["db"])
-}
-
-func get(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	bucket := vars["bucket"]
-	key := vars["key"]
-	res, err := database.Get([]byte(bucket), []byte(key))
+	dbFolder := "/home/ubuntu/"
+	dbPath := dbFolder + userRequest.db
+	err := os.Remove(dbPath)
 	handleErr(err)
-	response := "{\"" + key + "\":\"" + string(res) + "\"}"
-	w.Write([]byte(response))
+	return err
 }
-
-func put(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	bucket := vars["bucket"]
-	key := vars["key"]
-	val, err := ioutil.ReadAll(r.Body)
-	handleErr(err)
-	database.Put([]byte(bucket), []byte(key), []byte(val))
-}
-
 func handleErr(err error) {
 	if err != nil {
 		log.Fatal(err)
