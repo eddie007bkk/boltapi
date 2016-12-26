@@ -25,15 +25,15 @@ func main() {
 }
 
 func openDB(dbfile string) (d *boltdb.Database, err error) {
+	if database != nil {
+		err := database.DB.Close()
+		handleErr(err)
+	}
 	dbFolder := "/home/ubuntu/"
 	dbPath := dbFolder + dbfile
 	database, err := boltdb.NewDatabase(dbPath)
 	handleErr(err)
 	return database, err
-}
-
-func closeDB() {
-	database.DB.Close()
 }
 
 func getCurrentDB(w http.ResponseWriter, r *http.Request) {
