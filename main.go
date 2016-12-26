@@ -16,8 +16,6 @@ func init() {
 var database *boltdb.Database
 
 func main() {
-	dbfile := "/home/ubuntu/test.db"
-	database, _ = boltdb.NewDatabase(dbfile)
 
 	log.Println("Begin Server")
 	router := mux.NewRouter().StrictSlash(true)
@@ -26,12 +24,37 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
 
+func openDB(dbfile string) (d *boltdb.Database, err error) {
+	dbFolder := "/home/ubuntu/"
+	dbPath := dbFolder + dbfile
+	database, err := boltdb.NewDatabase(dbPath)
+	handleErr(err)
+	return database, err
+}
+
+func closeDB() {
+	database.DB.Close()
+}
+
 func getCurrentDB(w http.ResponseWriter, r *http.Request) {
-	dbPath := database.CurrentDB()
-	w.Write([]byte(dbPath))
+	if database == nil {
+		log.Println("DB = Nil")
+		w.Write([]byte("{\"database\":\"none\"}"))
+	} else {
+		dbPath := database.CurrentDB()
+		w.Write([]byte("{\"database\":\"" + dbPath + "\"}"))
+	}
 }
 
 func reqHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	requestDB := vars["db"]
+
+	if database == nil || (requestDB != database.CurrentDB()) {
+		var err error
+		database, err = openDB(requestDB)
+		handleErr(err)
+	}
 	switch r.Method {
 	case "PUT":
 		put(w, r)
@@ -47,10 +70,8 @@ func get(w http.ResponseWriter, r *http.Request) {
 	bucket := vars["bucket"]
 	key := vars["key"]
 	res, err := database.Get([]byte(bucket), []byte(key))
-	if err != nil {
-		log.Fatal(err)
-	}
-	response := "{" + key + ":" + string(res) + "}"
+	handleErr(err)
+	response := "{\"" + key + "\":\"" + string(res) + "\"}"
 	w.Write([]byte(response))
 }
 
@@ -59,8 +80,12 @@ func put(w http.ResponseWriter, r *http.Request) {
 	bucket := vars["bucket"]
 	key := vars["key"]
 	val, err := ioutil.ReadAll(r.Body)
+	handleErr(err)
+	database.Put([]byte(bucket), []byte(key), []byte(val))
+}
+
+func handleErr(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	database.Put([]byte(bucket), []byte(key), []byte(val))
 }
