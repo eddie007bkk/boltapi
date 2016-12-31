@@ -5,6 +5,7 @@ It allows the user to easily perform CRUD operations for key/value pairs as well
 
 *********************************************************************************************
 PUT OPERATIONS:
+
 Databases & buckets are created (if it does not already exist) when a key/value pair is written using PUT.
 
 /dbs/{db}/bucket/{bucketName}/keys/{keyName}
@@ -17,7 +18,7 @@ Creates Database and/or bucket if they do not already exist. Inserts key/value p
 *********************************************************************************************
 GET OPERATIONS:
 
-/dbs/
+/dbs/ <br>
 Show All Databases
 
 /dbs/{db}/stats
