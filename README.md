@@ -8,7 +8,7 @@ PUT OPERATIONS:
 
 Databases & buckets are created (if it does not already exist) when a key/value pair is written using PUT.
 
-/dbs/{db}/bucket/{bucketName}/keys/{keyName}
+/dbs/{db}/bucket/{bucketName}/keys/{keyName} <br>
 Creates Database and/or bucket if they do not already exist. Inserts key/value pair using BODY as value.
 
     Ex:
