@@ -32,14 +32,14 @@ Returns Grid with Following Information <br>
 <li>(Possibly) Historical Read Speed</li>
 </ul>
 
-/dbs/{db}/bucket/ <br>
+/dbs/{db}/buckets/ <br>
 Returns list of all buckets <br>
 ** Buckets are automatically created when user attempts to insert a key to a bucket that does not yet exist
 
-/dbs/{db}/bucket/{bucketName}/keys/ <br>
+/dbs/{db}/buckets/{bucketName}/keys/ <br>
 Returns list of all keys in bucket
 
-/dbs/{db}/bucket/{bucketName}/keys/{keyName} <br>
+/dbs/{db}/buckets/{bucketName}/keys/{keyName} <br>
 Returns {"key":"value"}, returns empty string "" if key does not exist
 
 *********************************************************************************************
@@ -49,10 +49,10 @@ All delete operations require no body and offer no intent confirmation.
 /dbs/{db} <br>
 Deletes entire database.
 
-/dbs/{db}/bucket/{bucketName} <br>
+/dbs/{db}/buckets/{bucketName} <br>
 Deletes bucket & all contents.
 
-/dbs/{db}/bucket/{bucketName}/keys/{keyName} <br>
+/dbs/{db}/buckets/{bucketName}/keys/{keyName} <br>
 Deletes key/value pair.
 
 *********************************************************************************************
