@@ -17,6 +17,8 @@ func NewDatabase(dbfile string) (d *Database, err error) {
 // Database Struct
 type Database struct {
 	DB *bolt.DB
+	BK *bolt.Bucket
+	BS *bolt.BucketStats
 }
 
 // Put inserts a key:value pair into the database
