@@ -21,23 +21,23 @@ GET OPERATIONS:
 /dbs/ <br>
 Show All Databases
 
-/dbs/{db}/stats
-Returns Grid with Following Information
-    Count of Buckets
-    Count of Keys
-    Size of Database
-    Average Bytes Per Key
-    (Possibly) Historical Write Speed
-    (Possibly) Historical Read Speed
+/dbs/{db}/stats <br>
+Returns Grid with Following Information <br>
+    Count of Buckets <br>
+    Count of Keys <br>
+    Size of Database <br>
+    Average Bytes Per Key <br>
+    (Possibly) Historical Write Speed <br>
+    (Possibly) Historical Read Speed <br>
 
-/dbs/{db}/bucket/
-Returns list of all buckets
+/dbs/{db}/bucket/<br>
+Returns list of all buckets<br>
     ** Buckets are automatically created when user attempts to insert a key to a bucket that does not yet exist
 
-/dbs/{db}/bucket/{bucketName}/keys/
+/dbs/{db}/bucket/{bucketName}/keys/<br>
 Returns list of all keys in bucket
 
-/dbs/{db}/bucket/{bucketName}/keys/{keyName}
+/dbs/{db}/bucket/{bucketName}/keys/{keyName}<br>
 Returns {"key":"value"}, returns empty string "" if key does not exist
 
 *********************************************************************************************
