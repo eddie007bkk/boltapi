@@ -23,13 +23,14 @@ Show All Databases
 
 /dbs/{db}/stats <br>
 Returns Grid with Following Information <br>
-    Count of Buckets <br>
-    Count of Keys <br>
-    Size of Database <br>
-    Average Bytes Per Key <br>
-    (Possibly) Historical Write Speed <br>
-    (Possibly) Historical Read Speed <br>
-
+<ul>
+<li>Count of Buckets</li>
+<li>Count of Keys</li>
+<li>Size of Database</li>
+<li>Average Bytes Per Key</li>
+<li>(Possibly) Historical Write Speed</li>
+<li>(Possibly) Historical Read Speed</li>
+</ul>
 /dbs/{db}/bucket/<br>
 Returns list of all buckets<br>
     ** Buckets are automatically created when user attempts to insert a key to a bucket that does not yet exist
