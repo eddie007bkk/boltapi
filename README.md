@@ -31,32 +31,33 @@ Returns Grid with Following Information <br>
 <li>(Possibly) Historical Write Speed</li>
 <li>(Possibly) Historical Read Speed</li>
 </ul>
-/dbs/{db}/bucket/<br>
-Returns list of all buckets<br>
-    ** Buckets are automatically created when user attempts to insert a key to a bucket that does not yet exist
 
-/dbs/{db}/bucket/{bucketName}/keys/<br>
+/dbs/{db}/bucket/ <br>
+Returns list of all buckets <br>
+** Buckets are automatically created when user attempts to insert a key to a bucket that does not yet exist
+
+/dbs/{db}/bucket/{bucketName}/keys/ <br>
 Returns list of all keys in bucket
 
-/dbs/{db}/bucket/{bucketName}/keys/{keyName}<br>
+/dbs/{db}/bucket/{bucketName}/keys/{keyName} <br>
 Returns {"key":"value"}, returns empty string "" if key does not exist
 
 *********************************************************************************************
-DELETE OPERATIONS:
+DELETE OPERATIONS: <br>
 All delete operations require no body and offer no intent confirmation.
 
-/dbs/{db}
+/dbs/{db} <br>
 Deletes entire database.
 
-/dbs/{db}/bucket/{bucketName}
+/dbs/{db}/bucket/{bucketName} <br>
 Deletes bucket & all contents.
 
-/dbs/{db}/bucket/{bucketName}/keys/{keyName}
+/dbs/{db}/bucket/{bucketName}/keys/{keyName} <br>
 Deletes key/value pair.
 
 *********************************************************************************************
 POST OPERATIONS:
 
-/dbs/{db}/compact
-Compacts the database by reading the entire database and writing to a new database.
+/dbs/{db}/compact <br>
+Compacts the database by reading the entire database and writing to a new database. <br>
 The original database is then overwritten by the new database. (Reducing size, eliminating deleted keys)
