@@ -13,7 +13,7 @@ import (
 )
 
 type userRequest struct {
-	db, bucket, key, resource string
+	db, bucket, key, cmd string
 }
 
 func init() {
@@ -91,13 +91,38 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 			*/
 		}
 	} else {
-		//Odd number of entries in uri means we ended with either dbs, buckets or keys (general)
-		cmd := uri[len(uri)-1]
-		log.Println(cmd)
+		/*Odd number of entries in uri means we ended with either dbs, buckets or keys (general)
+		Possible Commands:
+			/dbs/
+				- GET - Show All Databases
+			/dbs/{database}/stats
+				- GET - Return stats grid about database
+			/dbs/{database}/compact
+				- POST - Compact database by reading & rewriting entire dbs
+			/dbs/{database}/buckets
+				- GET - Show All Buckets
+			/dbs/{database}/buckets/{bucket}/keys/
+				- GET - Show all keys in bucket
+		*/
+		userRequest.cmd = uri[len(uri)-1]
+		switch userRequest.cmd {
+		case "dbs":
+			log.Println("Show all databases")
+		case "stats":
+			log.Println("Show stats for database: ", userRequest.db)
+		case "compact":
+			log.Println("Compact this database:", userRequest.db)
+		case "buckets":
+			log.Println("Show all buckets in this database: ", userRequest.db)
+		case "keys":
+			log.Println("Show all keys in database:", userRequest.db, "bucket:", userRequest.bucket)
+		default:
+			log.Println("Not possible because routes are predefined by router.")
+		}
 
 	}
 
-	w.Write([]byte("None"))
+	w.Write([]byte("Bananabananabanana"))
 	/*
 		switch r.Method {
 		case "PUT":
