@@ -21,7 +21,14 @@ func init() {
 
 var database *boltdb.Database
 
+const dbsFolder string = "/home/ubuntu/boltdbs"
+
 func main() {
+
+	if _, err := os.Stat(dbsFolder); os.IsNotExist(err) {
+		os.Mkdir(dbsFolder, os.ModePerm)
+	}
+
 	port := ":8080"
 	log.Println("Server Listening on Port: ", port)
 
@@ -64,8 +71,7 @@ func openDB(dbfile string) (d *boltdb.Database, err error) {
 		err := database.DB.Close()
 		handleErr(err)
 	}
-	dbFolder := "/home/ubuntu/"
-	dbPath := dbFolder + dbfile
+	dbPath := dbsFolder + "/" + dbfile
 	database, err := boltdb.NewDatabase(dbPath)
 	handleErr(err)
 	return database, err
