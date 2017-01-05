@@ -7,12 +7,13 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"strings"
 
 	"github.com/gorilla/mux"
 )
 
 type userRequest struct {
-	db, bucket, key string
+	db, bucket, key, resource string
 }
 
 func init() {
@@ -34,21 +35,30 @@ func main() {
 
 	router := mux.NewRouter().StrictSlash(true)
 
+	//TODO: Router paths need to be cleaned up with regular expressions/options
 	router.HandleFunc("/dbs/", requestHandler)
 	router.HandleFunc("/dbs/{db}/", requestHandler)
 	router.HandleFunc("/dbs/{db}/stats/", requestHandler)
 	router.HandleFunc("/dbs/{db}/compact/", requestHandler)
+	router.HandleFunc("/dbs/{db}/buckets/", requestHandler)
+	router.HandleFunc("/dbs/{db}/buckets/{bucketName}", requestHandler)
+	router.HandleFunc("/dbs/{db}/buckets/{bucketName}/keys", requestHandler)
 	router.HandleFunc("/dbs/{db}/buckets/{bucketName}/keys/{keyName}", requestHandler)
 
 	log.Fatal(http.ListenAndServe(port, router))
 }
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
+	//Get variables {db}, {bucketName}, and {keyName} from user request URL
 	vars := mux.Vars(r)
 	var userRequest userRequest
 	userRequest.db = vars["db"]
 	userRequest.bucket = vars["bucketName"]
 	userRequest.key = vars["keyName"]
+
+	reqURI := r.URL.RequestURI()
+	reqURI = reqURI[1 : len(reqURI)-1]
+	uri := strings.Split(reqURI, "/")
 
 	if len(userRequest.db) > 0 && (database == nil || (userRequest.db != database.CurrentDB())) {
 		var err error
@@ -56,14 +66,47 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 		handleErr(err)
 	}
 
-	switch r.Method {
-	case "PUT":
-		put(w, r, userRequest)
-	case "GET":
-		get(w, r, userRequest)
-	case "DELETE":
-		delete(w, r, userRequest)
+	if (len(uri) % 2) == 0 {
+		//Even number of entries in uri means we ended with either a specific db, bucket or key
+		log.Println("Even URI")
+		if len(vars["keyName"]) > 0 {
+			/*
+				If we have a keyName, then the user has also specified a dbs and bucket
+				Possible Actions:
+					GET - Read a value given a key in the URL
+					PUT - Insert a value from the body, given a key in the URL
+					DELETE - Delete a key/value pair, given a key in the URL
+			*/
+		} else if len(vars["bucketName"]) > 0 {
+			/*
+				We have a bucketName but not a keyName
+				Possible Actions:
+					DELETE - Delete bucket & all contents.
+			*/
+		} else if len(vars["db"]) > 0 {
+			/*
+				We only have a database name.
+				Possible actions:
+					DELETE - Delite entire database
+			*/
+		}
+	} else {
+		//Odd number of entries in uri means we ended with either dbs, buckets or keys (general)
+		cmd := uri[len(uri)-1]
+		log.Println(cmd)
+
 	}
+
+	w.Write([]byte("None"))
+	/*
+		switch r.Method {
+		case "PUT":
+			put(w, r, userRequest)
+		case "GET":
+			get(w, r, userRequest)
+		case "DELETE":
+			delete(w, r, userRequest)
+		}*/
 }
 
 func openDB(dbfile string) (d *boltdb.Database, err error) {
