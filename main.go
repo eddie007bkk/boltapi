@@ -63,7 +63,7 @@ func main() {
 	router.HandleFunc("/dbs/{db}/stats/", adminHandler)
 	router.HandleFunc("/dbs/{db}/compact/", adminHandler)
 	router.HandleFunc("/dbs/{db}/buckets/", adminHandler)
-	router.HandleFunc("/dbs/{db}/buckets/{bucketName}/keys", requestHandler)
+	//router.HandleFunc("/dbs/{db}/buckets/{bucketName}/keys", requestHandler)
 
 	log.Fatal(http.ListenAndServe(port, router))
 }
@@ -105,8 +105,8 @@ func txHandler(w http.ResponseWriter, r *http.Request) {
 
 func adminHandler(w http.ResponseWriter, r *http.Request) {
 	//Get variables {db}, {bucketName}, and {keyName} from user request URL
-	var userReq userRequest
-	userReq.GetRequest(r)
+	var userRequest userRequest
+	userRequest.GetRequest(r)
 
 	reqURI := r.URL.RequestURI()
 	reqURI = reqURI[1 : len(reqURI)-1]
