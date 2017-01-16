@@ -43,6 +43,7 @@ func txHandler(w http.ResponseWriter, r *http.Request) {
 			Possible actions:
 				DELETE - Delite entire database
 		*/
+		txDeleteDatabase(w, r, userReq)
 	}
 }
 
@@ -89,8 +90,8 @@ func txDeleteDatabase(w http.ResponseWriter, r *http.Request, userRequest userRe
 		err := database.DB.Close()
 		handleErr(err)
 	}
-	dbFolder := "/home/ubuntu/"
-	dbPath := dbFolder + userRequest.db
+
+	dbPath := dbsFolder + "/" + userRequest.db
 	err := os.Remove(dbPath)
 	handleErr(err)
 	return err
