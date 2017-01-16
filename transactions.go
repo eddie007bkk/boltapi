@@ -22,7 +22,7 @@ func txHandler(w http.ResponseWriter, r *http.Request) {
 		case "GET":
 			txGet(w, r, userReq)
 		case "DELETE":
-			txDelete(w, r, userReq)
+			txDeleteKey(w, r, userReq)
 		}
 		/*
 			If we have a keyName, then the user has also specified a dbs and bucket
@@ -80,7 +80,11 @@ func txPut(w http.ResponseWriter, r *http.Request, userRequest userRequest) {
 	}
 
 }
-func txDelete(w http.ResponseWriter, r *http.Request, userRequest userRequest) error {
+func txDeleteKey(w http.ResponseWriter, r *http.Request, userRequest userRequest) error {
+	return nil
+}
+
+func txDeleteDatabase(w http.ResponseWriter, r *http.Request, userRequest userRequest) error {
 	if database != nil {
 		err := database.DB.Close()
 		handleErr(err)
