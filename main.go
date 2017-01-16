@@ -1,7 +1,7 @@
 package main
 
 import (
-	"boltapi/boltdb"
+	"boltapi/db"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -16,11 +16,28 @@ type userRequest struct {
 	db, bucket, key, cmd string
 }
 
+func (userReq *userRequest) GetRequest(r *http.Request) {
+	vars := mux.Vars(r)
+	userReq.db = vars["db"]
+	userReq.bucket = vars["bucketName"]
+	userReq.key = vars["keyName"]
+	return
+}
+
+func (userReq *userRequest) GetUserDB(r *http.Request) {
+	if len(userReq.db) > 0 && (database == nil || (userReq.db != database.CurrentDB())) {
+		var err error
+		database, err = openDB(userReq.db)
+		handleErr(err)
+	}
+	//Otherwise, system is already using user db.
+}
+
 func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 }
 
-var database *boltdb.Database
+var database *db.Database
 
 const dbsFolder string = "/home/ubuntu/boltdbs"
 
@@ -36,60 +53,69 @@ func main() {
 	router := mux.NewRouter().StrictSlash(true)
 
 	//TODO: Router paths need to be cleaned up with regular expressions/options
-	router.HandleFunc("/dbs/", requestHandler)
-	router.HandleFunc("/dbs/{db}/", requestHandler)
-	router.HandleFunc("/dbs/{db}/stats/", requestHandler)
-	router.HandleFunc("/dbs/{db}/compact/", requestHandler)
-	router.HandleFunc("/dbs/{db}/buckets/", requestHandler)
-	router.HandleFunc("/dbs/{db}/buckets/{bucketName}", requestHandler)
+	//txHandler functions are transactional requests to insert, update or delete entries
+	router.HandleFunc("/dbs/{db}/", txHandler)
+	router.HandleFunc("/dbs/{db}/buckets/{bucketName}", txHandler)
+	router.HandleFunc("/dbs/{db}/buckets/{bucketName}/keys/{keyName}", txHandler)
+
+	//adminHandler are requests for information about the database or an action such as compaction
+	router.HandleFunc("/dbs/", adminHandler)
+	router.HandleFunc("/dbs/{db}/stats/", adminHandler)
+	router.HandleFunc("/dbs/{db}/compact/", adminHandler)
+	router.HandleFunc("/dbs/{db}/buckets/", adminHandler)
 	router.HandleFunc("/dbs/{db}/buckets/{bucketName}/keys", requestHandler)
-	router.HandleFunc("/dbs/{db}/buckets/{bucketName}/keys/{keyName}", requestHandler)
 
 	log.Fatal(http.ListenAndServe(port, router))
 }
 
-func requestHandler(w http.ResponseWriter, r *http.Request) {
+func txHandler(w http.ResponseWriter, r *http.Request) {
+	var userReq userRequest
+	userReq.GetRequest(r)
+	log.Println(userReq.db, userReq.bucket, userReq.key, userReq.key)
+	if len(userReq.key) > 0 {
+		switch r.Method {
+		case "PUT":
+			put(w, r, userReq)
+		case "GET":
+			get(w, r, userReq)
+		case "DELETE":
+			delete(w, r, userReq)
+		}
+		/*
+			If we have a keyName, then the user has also specified a dbs and bucket
+			Possible Actions:
+				GET - Read a value given a key in the URL
+				PUT - Insert a value from the body, given a key in the URL
+				DELETE - Delete a key/value pair, given a key in the URL
+		*/
+	} else if len(userReq.bucket) > 0 {
+		/*
+			We have a bucketName but not a keyName
+			Possible Actions:
+				DELETE - Delete bucket & all contents.
+		*/
+	} else if len(userReq.db) > 0 {
+		/*
+			We only have a database name.
+			Possible actions:
+				DELETE - Delite entire database
+		*/
+	}
+}
+
+func adminHandler(w http.ResponseWriter, r *http.Request) {
 	//Get variables {db}, {bucketName}, and {keyName} from user request URL
-	vars := mux.Vars(r)
-	var userRequest userRequest
-	userRequest.db = vars["db"]
-	userRequest.bucket = vars["bucketName"]
-	userRequest.key = vars["keyName"]
+	var userReq userRequest
+	userReq.GetRequest(r)
 
 	reqURI := r.URL.RequestURI()
 	reqURI = reqURI[1 : len(reqURI)-1]
 	uri := strings.Split(reqURI, "/")
 
-	if len(userRequest.db) > 0 && (database == nil || (userRequest.db != database.CurrentDB())) {
-		var err error
-		database, err = openDB(userRequest.db)
-		handleErr(err)
-	}
-
 	if (len(uri) % 2) == 0 {
 		//Even number of entries in uri means we ended with either a specific db, bucket or key
 		log.Println("Even URI")
-		if len(vars["keyName"]) > 0 {
-			/*
-				If we have a keyName, then the user has also specified a dbs and bucket
-				Possible Actions:
-					GET - Read a value given a key in the URL
-					PUT - Insert a value from the body, given a key in the URL
-					DELETE - Delete a key/value pair, given a key in the URL
-			*/
-		} else if len(vars["bucketName"]) > 0 {
-			/*
-				We have a bucketName but not a keyName
-				Possible Actions:
-					DELETE - Delete bucket & all contents.
-			*/
-		} else if len(vars["db"]) > 0 {
-			/*
-				We only have a database name.
-				Possible actions:
-					DELETE - Delite entire database
-			*/
-		}
+
 	} else {
 		/*Odd number of entries in uri means we ended with either dbs, buckets or keys (general)
 		Possible Commands:
@@ -123,24 +149,16 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write([]byte("Bananabananabanana"))
-	/*
-		switch r.Method {
-		case "PUT":
-			put(w, r, userRequest)
-		case "GET":
-			get(w, r, userRequest)
-		case "DELETE":
-			delete(w, r, userRequest)
-		}*/
+
 }
 
-func openDB(dbfile string) (d *boltdb.Database, err error) {
+func openDB(dbfile string) (d *db.Database, err error) {
 	if database != nil {
 		err := database.DB.Close()
 		handleErr(err)
 	}
 	dbPath := dbsFolder + "/" + dbfile
-	database, err := boltdb.NewDatabase(dbPath)
+	database, err := db.NewDatabase(dbPath)
 	handleErr(err)
 	return database, err
 }
@@ -153,6 +171,10 @@ func getCurrentDB(w http.ResponseWriter, r *http.Request, userRequest userReques
 		dbPath := database.CurrentDB()
 		w.Write([]byte("{\"database\":\"" + dbPath + "\"}"))
 	}
+}
+
+type exec struct {
+	cmd string
 }
 
 func get(w http.ResponseWriter, r *http.Request, userRequest userRequest) {
