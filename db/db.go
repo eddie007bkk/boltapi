@@ -26,7 +26,7 @@ func (bt *Database) Put(bucket, key, val []byte) error {
 	//dbPath := bt.db.Path()
 	//log.Println("DB Info: ", reflect.TypeOf(dbPath), dbPath)
 	err := bt.DB.Update(func(tx *bolt.Tx) error {
-		bucket, err := tx.CreateBucketIfNotExists([]byte(bucket))
+		bucket, err := tx.CreateBucketIfNotExists(bucket)
 		if err != nil {
 			return err
 		}
@@ -42,9 +42,9 @@ func (bt *Database) Put(bucket, key, val []byte) error {
 // Get retrieves a key:value pair from the database
 func (bt *Database) Get(bucket, key []byte) (result []byte, err error) {
 	bt.DB.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(bucket))
+		b := tx.Bucket(bucket)
 		if b != nil {
-			v := b.Get([]byte(key))
+			v := b.Get(key)
 			if v != nil {
 				result = make([]byte, len(v))
 				copy(result, v)
@@ -52,10 +52,26 @@ func (bt *Database) Get(bucket, key []byte) (result []byte, err error) {
 		} else {
 			result = []byte("")
 		}
-
 		return nil
 	})
 	return
+}
+
+// DeleteKey removes a key:value pair from the database
+func (bt *Database) DeleteKey(bucket, key []byte) (err error) {
+
+	err = bt.DB.Update(func(tx *bolt.Tx) error {
+		bucket, err := tx.CreateBucketIfNotExists(bucket)
+		if err != nil {
+			return err
+		}
+		err = bucket.Delete(key)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	return err
 }
 
 // CurrentDB retrieves the path of the current database

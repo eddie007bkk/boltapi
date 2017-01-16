@@ -47,13 +47,17 @@ func txHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func txGet(w http.ResponseWriter, r *http.Request, userRequest userRequest) {
+func txGet(w http.ResponseWriter, r *http.Request, userRequest userRequest) (err error) {
 	if len(userRequest.key) > 0 {
 		//User has specified a db, bucket & key
 		res, err := database.Get([]byte(userRequest.bucket), []byte(userRequest.key))
-		handleErr(err)
-		response := "{\"" + userRequest.key + "\":\"" + string(res) + "\"}"
-		w.Write([]byte(response))
+		if err != nil {
+			w.Write([]byte(`{"delete":` + err.Error() + `}`))
+		} else {
+			response := "{\"" + userRequest.key + "\":\"" + string(res) + "\"}"
+			w.Write([]byte(response))
+		}
+
 	} else if len(userRequest.db) > 0 {
 		//User has only specified a db, return data about this db
 		res := database.BK.Stats()
@@ -62,37 +66,63 @@ func txGet(w http.ResponseWriter, r *http.Request, userRequest userRequest) {
 	} else {
 		//User has not specified any db, return data about all DBs
 	}
-
+	return
 }
 
-func txPut(w http.ResponseWriter, r *http.Request, userRequest userRequest) {
+func txPut(w http.ResponseWriter, r *http.Request, userRequest userRequest) (err error) {
 	if len(userRequest.key) > 0 {
 		//User has specified a db, bucket & key
 
 		bucket := userRequest.bucket
 		key := userRequest.key
 		val, err := ioutil.ReadAll(r.Body)
-		handleErr(err)
-		err = database.Put([]byte(bucket), []byte(key), []byte(val))
+		if err != nil {
+			w.Write([]byte(`{"delete":` + err.Error() + `}`))
+		} else {
+			err = database.Put([]byte(bucket), []byte(key), []byte(val))
+			if err != nil {
+				w.Write([]byte(`{"delete":` + err.Error() + `}`))
+			} else {
+				w.Write([]byte(`{"put":"ok"}`))
+			}
+		}
+
 	} else if len(userRequest.db) > 0 {
 		//User has only specified a db, open a new database
 	} else {
 		//User has not specified any db, do nothing
 	}
-
-}
-func txDeleteKey(w http.ResponseWriter, r *http.Request, userRequest userRequest) error {
-	return nil
+	return
 }
 
-func txDeleteDatabase(w http.ResponseWriter, r *http.Request, userRequest userRequest) error {
+func txDeleteKey(w http.ResponseWriter, r *http.Request, userRequest userRequest) (err error) {
+	if len(userRequest.key) > 0 {
+		//User has specified a db, bucket & key
+		bucket := userRequest.bucket
+		key := userRequest.key
+		err = database.DeleteKey([]byte(bucket), []byte(key))
+		if err != nil {
+			w.Write([]byte(`{"delete":` + err.Error() + `}`))
+			return
+		}
+		w.Write([]byte(`{"delete":"ok")`))
+		return
+	}
+	return
+}
+
+func txDeleteDatabase(w http.ResponseWriter, r *http.Request, userRequest userRequest) (err error) {
 	if database != nil {
-		err := database.DB.Close()
-		handleErr(err)
+		err = database.DB.Close()
+
 	}
 
 	dbPath := dbsFolder + "/" + userRequest.db
-	err := os.Remove(dbPath)
-	handleErr(err)
-	return err
+	err = os.Remove(dbPath)
+	if err != nil {
+		w.Write([]byte(`{"delete":` + err.Error() + `}`))
+		return
+	}
+	w.Write([]byte(`{"delete":"ok")`))
+	return
 }
