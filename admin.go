@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
@@ -18,7 +19,7 @@ func adminHandler(w http.ResponseWriter, r *http.Request) {
 	userRequest.cmd = uri[len(uri)-1]
 	switch userRequest.cmd {
 	case "dbs":
-		log.Println("Show all databases")
+		adminGetDatabases(w, r)
 	case "stats":
 		log.Println("Show stats for database: ", userRequest.db)
 	case "compact":
@@ -30,7 +31,16 @@ func adminHandler(w http.ResponseWriter, r *http.Request) {
 	default:
 		log.Println("Not possible because routes are predefined by router.")
 	}
+	return
+}
 
-	w.Write([]byte("Bananabananabanana"))
-
+func adminGetDatabases(w http.ResponseWriter, r *http.Request) {
+	files, _ := ioutil.ReadDir(dbsFolder)
+	var dbList []string
+	for _, f := range files {
+		dbList = append(dbList, `"`+f.Name()+`"`)
+	}
+	res := `{"databases":[` + strings.Join(dbList, ",") + `]}`
+	w.Write([]byte(res))
+	return
 }
